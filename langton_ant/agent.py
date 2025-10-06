@@ -16,16 +16,8 @@ class Ant(CellAgent):
         self._dir = 0
     
     @property
-    def x(self):
-        return self.cell.coordinate[0]
-    
-    @property
-    def y(self):
-        return self.cell.coordinate[1]
-    
-    @property
     def xy(self):
-        return self.x, self.y
+        return self.cell.coordinate
     
     @property
     def neighborhood(self):
@@ -48,4 +40,45 @@ class Ant(CellAgent):
         x, y = (self.DIRS[self._dir] + self.xy) % grid_size
         self.cell = self.neighborhood.select(
             lambda c: c.coordinate[0] == x and c.coordinate[1] == y
+        ).cells[0]
+    
+
+class RLAnt(CellAgent):
+    DIRS = {
+        0: np.array((1, 0), dtype=int),
+        1: np.array((0, 1), dtype=int),
+        2: np.array((-1, 0), dtype=int),
+        3: np.array((0, -1), dtype=int)
+    }
+
+    def __init__(self, model, cell: Cell, rl: str):
+        super().__init__(model)
+        self.cell = cell
+        self._dir = 0
+        self._rotors = {
+            i: 1 if c == "r" else -1
+            for i, c in enumerate(rl.casefold())
+        }
+        self._n_rotors = len(rl)
+    
+    @property
+    def xy(self):
+        return self.cell.coordinate
+    
+    @property
+    def neighborhood(self):
+        return self.cell.neighborhood
+    
+    def determine_direction(self):
+        rot = self._rotors[self.cell.smell]
+        self._dir = (self._dir + rot) % 4
+    
+    def change_smell(self):
+        self.cell.smell = (self.cell.smell + 1) % self._n_rotors
+
+    def move(self):
+        grid_size = self.model.grid.width, self.model.grid.height
+        xy = (self.DIRS[self._dir] + self.xy) % grid_size
+        self.cell = self.neighborhood.select(
+            lambda c: np.all(xy == c.coordinate)
         ).cells[0]

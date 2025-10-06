@@ -1,2 +1,2 @@
-from .agent import Ant
-from .model import LangtonAnt
+from .agent import Ant, RLAnt
+from .model import LangtonAnt, RLAntModel
